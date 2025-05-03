@@ -30,7 +30,6 @@ class CustomAppBarWithImage extends StatelessWidget {
             ),
           ),
         ),
-
         Text(
           title,
           style: TextStyle(
