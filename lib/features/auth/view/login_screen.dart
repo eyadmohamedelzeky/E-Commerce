@@ -1,11 +1,13 @@
 import 'package:e_commerce/core/constants/app_colors.dart';
 import 'package:e_commerce/core/constants/app_constants.dart';
 import 'package:e_commerce/core/constants/app_images.dart';
+import 'package:e_commerce/core/helper/hive_helper.dart';
 import 'package:e_commerce/core/routes/app_routes.dart';
 import 'package:e_commerce/core/widget/custom_button.dart';
 import 'package:e_commerce/core/widget/custom_text_form_field.dart';
 import 'package:e_commerce/features/auth/controller/auth_cubit.dart';
 import 'package:e_commerce/features/auth/controller/auth_state.dart';
+import 'package:e_commerce/features/auth/model/login_response_model.dart';
 import 'package:e_commerce/features/auth/view/widgets/login_with_soical.dart';
 import 'package:e_commerce/features/auth/view/widgets/remeber_me_and_forget_password.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +23,24 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+
+    Future<void> checkLoginStatus(BuildContext context) async {
+    final userJson = await HiveHelper.getFromHive(key: AppConstants.loginModel);
+
+    if (userJson != null) {
+      final model = LoginResponseModel.fromJson(Map<String, dynamic>.from(userJson));
+      updateUerModel(model);
+      Navigator.pushReplacementNamed(context, AppRoutes.homeLayout);
+    } else {
+      // Navigator.pushReplacementNamed(context, AppRoutes.login);
+    }
+  }
+  @override
+  void initState() {
+    super.initState();
+    checkLoginStatus(context);
+
+  }
   final formKey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
@@ -28,7 +48,23 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Form(
         key: formKey,
         child: SafeArea(
-          child: BlocBuilder<AuthController, AuthState>(
+          child: BlocConsumer<AuthController, AuthState>(
+            listener: (context, authState) {
+              if (authState is LoginSuccessState) {
+                Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  AppRoutes.homeLayout,
+                  (route) => false,
+                );
+              }
+              if(authState is LoginErrorState){
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(authState.error!),
+                  ),
+                );
+              }
+            },
             builder: (context, authState) {
               final authController = AuthController.get(context);
               return Center(
@@ -46,7 +82,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         CustomTextFormField(
                           controller: authController.emailControllerForLogin,
                           autovalidateMode: AutovalidateMode.onUserInteraction,
-
                           validator: (usernameOrEmail) {
                             if (usernameOrEmail!.isEmpty) {
                               return 'Please enter your username or email';
@@ -105,11 +140,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           authController: authController,
                         ),
                         SizedBox(height: 10.h),
-                        CustomButton(
+                       authState is LoginLoadingState ? CircularProgressIndicator() : CustomButton(
                           buttonTitle: 'Login',
-                          onPressed: () {
+                          onPressed: () async{
                             if (formKey.currentState!.validate()) {
-                              // authController.login(context);
+                             await authController.login();
                             }
                           },
                         ),

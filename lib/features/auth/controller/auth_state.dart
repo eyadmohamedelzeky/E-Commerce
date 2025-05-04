@@ -16,3 +16,10 @@ class InitTimerState extends AuthState{}
 class TimerStartedState extends AuthState{}
 class TimerStartedLoadingState extends AuthState{}
 class IsVisiableChangedForNewPasswordState extends AuthState {}
+class LoginLoadingState extends AuthState{}
+class LoginSuccessState extends AuthState{}
+class LoginErrorState extends AuthState{
+  final String ?error;
+  LoginErrorState({this.error});
+}
+
